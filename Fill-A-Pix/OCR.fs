@@ -75,33 +75,28 @@ let getChar (unknown:Bitmap) =
 let rgbMatch (color1:Color) (color2:Color) =
     color1.R = color2.R && color1.G = color2.G && color1.B = color2.B
 
+// generic detection algorithm -- get color of all pixel offsets and whether they match target
+// and reduce using the specified matcher (and/or)
+let detector (matcher:bool->bool->bool) (color:Color) (offsets:(int*int)[]) (window:Bitmap) x y =
+    let matchTarget = rgbMatch color
+    let matches =
+        offsets
+        |> Array.map (fun (dx,dy) -> window.GetPixel( x+dx, y+dy ) )
+        |> Array.map matchTarget
+    matches
+    |> Array.reduce matcher
+
 // from middle of left side, call with increasing X -- returns true if right or above-right pixel is white
-let detectLeftBoundary (window:Bitmap) x y =
-    let matchTarget = rgbMatch Color.White
-    let right = window.GetPixel( x+1, y )
-    let rightAbove = window.GetPixel( x+1, y-1 )
-    matchTarget right || matchTarget rightAbove
+let detectLeftBoundary = detector (||) Color.White [|(1, 0); (1, -1)|]
 
 // from middle of right side, call with decreasing X -- returns true if left or above-left pixel is white
-let detectRightBoundary (window:Bitmap) x y =
-    let matchTarget = rgbMatch Color.White
-    let left = window.GetPixel( x-1, y )
-    let leftAbove = window.GetPixel( x-1, y-1 )
-    matchTarget left || matchTarget leftAbove
+let detectRightBoundary = detector (||) Color.White [|(-1, 0); (-1, -1)|]
 
 // from middle of bottom, call with decreasing Y -- returns true if above or above-left pixel is white
-let detectBottomBoundary (window:Bitmap) x y =
-    let matchTarget = rgbMatch Color.White
-    let above = window.GetPixel( x, y-1 )
-    let aboveLeft = window.GetPixel( x-1, y-1 )
-    matchTarget above || matchTarget aboveLeft
+let detectBottomBoundary = detector (||) Color.White [|(0, -1); (-1, -1)|]
 
 // from found left boundary (middle Y), call with decreasing Y -- returns true if right AND above-right pixel are gray
-let detectTopLeftCorner (window:Bitmap) x y =
-    let matchTarget = rgbMatch ( Color.FromArgb( 132, 132, 132 ) )
-    let right = window.GetPixel( x+1, y )
-    let rightAbove = window.GetPixel( x+1, y-1 )
-    matchTarget right && matchTarget rightAbove
+let detectTopLeftCorner = detector (&&) (Color.FromArgb( 132, 132, 132 ) ) [|(1,0); (1,-1)|]
 
 let findBoard (window:Bitmap) : Bitmap =
     let halfHeight = window.Height/2
