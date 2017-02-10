@@ -20,7 +20,7 @@ type BlankOrChar =
 
 type CharTemplate = { Char:BlankOrChar; Bitmap:Bitmap }
 
-type Match = BlankOrChar * float
+type MatchProbability = BlankOrChar * float
 
 let calcDiff (color1:Color) (color2:Color) =
     let deltaR = float color1.R - float color2.R
@@ -29,7 +29,6 @@ let calcDiff (color1:Color) (color2:Color) =
     sqrt ( deltaR * deltaR + deltaG * deltaG + deltaB * deltaB )
 
 let calculateMatch (template:Bitmap) (unknown:Bitmap) : float =
-    // for now assume the same size
     let scale (tBitmap:Bitmap) (sum:float) =
         sum / float ( tBitmap.Width * tBitmap.Height )
 
@@ -73,7 +72,58 @@ let getChar (unknown:Bitmap) =
     |> Array.sortBy ( fun charMatch -> snd charMatch )
     |> Array.take 3
 
+let rgbMatch (color1:Color) (color2:Color) =
+    color1.R = color2.R && color1.G = color2.G && color1.B = color2.B
 
+// from middle of left side, call with increasing X -- returns true if right or above-right pixel is white
+let detectLeftBoundary (window:Bitmap) x y =
+    let matchTarget = rgbMatch Color.White
+    let right = window.GetPixel( x+1, y )
+    let rightAbove = window.GetPixel( x+1, y-1 )
+    matchTarget right || matchTarget rightAbove
 
+// from middle of right side, call with decreasing X -- returns true if left or above-left pixel is white
+let detectRightBoundary (window:Bitmap) x y =
+    let matchTarget = rgbMatch Color.White
+    let left = window.GetPixel( x-1, y )
+    let leftAbove = window.GetPixel( x-1, y-1 )
+    matchTarget left || matchTarget leftAbove
 
+// from middle of bottom, call with decreasing Y -- returns true if above or above-left pixel is white
+let detectBottomBoundary (window:Bitmap) x y =
+    let matchTarget = rgbMatch Color.White
+    let above = window.GetPixel( x, y-1 )
+    let aboveLeft = window.GetPixel( x-1, y-1 )
+    matchTarget above || matchTarget aboveLeft
 
+// from found left boundary (middle Y), call with decreasing Y -- returns true if right AND above-right pixel are gray
+let detectTopLeftCorner (window:Bitmap) x y =
+    let matchTarget = rgbMatch ( Color.FromArgb( 132, 132, 132 ) )
+    let right = window.GetPixel( x+1, y )
+    let rightAbove = window.GetPixel( x+1, y-1 )
+    matchTarget right && matchTarget rightAbove
+
+let findBoard (window:Bitmap) : Bitmap =
+    let halfHeight = window.Height/2
+    let halfWidth = window.Width/2
+    let leftBoundaryX =
+        Seq.skipWhile (fun x -> not ( detectLeftBoundary window x halfHeight ) ) (seq [ 0 .. halfWidth ])
+        |> Seq.head 
+    let bottomBoundaryY =
+        Seq.skipWhile (fun y -> not ( detectBottomBoundary window halfWidth y ) )
+                      (seq [ window.Height-1 .. -1 .. halfHeight ])
+        |> Seq.head
+    let rightBoundaryX =
+        Seq.skipWhile (fun x -> not ( detectRightBoundary window x halfHeight ) )
+                      (seq [ window.Width-1 .. -1 .. halfWidth ])
+        |> Seq.head 
+    let topBoundaryY =
+        Seq.skipWhile (fun y -> not ( detectTopLeftCorner window leftBoundaryX y ) )
+                      (seq [ halfHeight .. -1 .. 0 ] )
+        |> Seq.head
+
+    let boardRect = new Rectangle( leftBoundaryX, topBoundaryY,
+                                   rightBoundaryX-leftBoundaryX+1, bottomBoundaryY-topBoundaryY+1 )
+    let board = window.Clone( boardRect, window.PixelFormat )
+    board.Save( "c:\\git\\Sandbox\\Fill-A-Pix\\board.png" )
+    board
