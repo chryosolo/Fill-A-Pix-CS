@@ -137,4 +137,8 @@ let findClues (board:Bitmap) =
             let (clue,_) = matchClue bitmap
             clue )
 
-
+let toBoard (clues:Clue[,]) =
+    let cells =
+        clues
+        |> Array2D.map ( fun clue -> {State=Unknown;Clue=clue} )
+    {Rows = Array2D.length1 clues; Cols= Array2D.length2 clues; Cells=cells}

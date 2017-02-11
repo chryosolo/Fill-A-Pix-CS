@@ -21,6 +21,6 @@ type Clue =
     | Blank
     | Given of GivenClue
 
-type Cell = {X:int; Y:int; State:CellState; Clue:Clue}
+type Cell = {State:CellState; Clue:Clue}
 
-type Board = {Rows:int; Cols:int; Cells:Cell[]}
+type Board = {Rows:int; Cols:int; Cells:Cell[,]}
