@@ -26,7 +26,7 @@ let calcDiff (color1:Color) (color2:Color) =
     let deltaR = float color1.R - float color2.R
     let deltaG = float color1.G - float color2.G
     let deltaB = float color1.B - float color2.B
-    sqrt ( deltaR * deltaR + deltaG * deltaG + deltaB * deltaB )
+    sqrt ( deltaR*deltaR + deltaG*deltaG + deltaB*deltaB )
 
 let calculateMatch (template:Bitmap) (unknown:Bitmap) : float =
     let scale (tBitmap:Bitmap) (sum:float) =
@@ -69,20 +69,20 @@ let clueTemplates = [| blankClue; zeroClue; oneClue; twoClue; threeClue; fourClu
 let matchClue (unknown:Bitmap) =
     clueTemplates
     |> Array.map ( fun clueTemp -> ( clueTemp.Clue, calculateMatch (clueTemp.Bitmap) unknown ) )
-    |> Array.sortBy ( fun clueMatch -> snd clueMatch )
+    |> Array.sortBy ( fun (_,matchPercentage) -> matchPercentage )
     |> Array.head
 
-let rgbMatch (color1:Color) (color2:Color) =
+let isRgbMatch (color1:Color) (color2:Color) =
     color1.R = color2.R && color1.G = color2.G && color1.B = color2.B
 
 // generic detection algorithm -- get color of all pixel offsets and whether they match target
 // and reduce using the specified matcher (and/or)
 let detector (matcher:bool->bool->bool) (color:Color) (offsets:(int*int)[]) (window:Bitmap) x y =
-    let matchTarget = rgbMatch color
+    let isRgbMatchForTargetColor = isRgbMatch color
     let matches =
         offsets
         |> Array.map (fun (dx,dy) -> window.GetPixel( x+dx, y+dy ) )
-        |> Array.map matchTarget
+        |> Array.map isRgbMatchForTargetColor
     matches
     |> Array.reduce matcher
 
@@ -122,7 +122,7 @@ let findClues (board:Bitmap) =
         [| 0 .. board.Width-1 |]
         |> Array.where (fun x -> detectColumn board x 0) // x's with vertical lines
         |> Array.pairwise
-    // find grid row indices and pixel boundaries
+    // find grid row pixel boundaries
     let rowBoundaries =
         [| 0 .. board.Height-1 |]
         |> Array.where (fun y -> detectRow board 0 y)
@@ -140,5 +140,5 @@ let findClues (board:Bitmap) =
 let toBoard (clues:Clue[,]) =
     let cells =
         clues
-        |> Array2D.map ( fun clue -> {State=Unknown;Clue=clue} )
-    {Rows = Array2D.length1 clues; Cols= Array2D.length2 clues; Cells=cells}
+        |> Array2D.map ( fun clue -> {State=Unknown;Clue=clue;ClueState=Active} )
+    {Rows=Array2D.length1 clues; Cols=Array2D.length2 clues; Cells=cells}

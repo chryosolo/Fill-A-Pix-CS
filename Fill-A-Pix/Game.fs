@@ -5,6 +5,10 @@ type CellState =
     | Filled
     | Empty
 
+type ClueState =
+    | Active
+    | Used
+
 type GivenClue =
     | Zero = 0
     | One = 1
@@ -21,6 +25,6 @@ type Clue =
     | Blank
     | Given of GivenClue
 
-type Cell = {State:CellState; Clue:Clue}
+type Cell = {State:CellState; Clue:Clue; ClueState:ClueState}
 
 type Board = {Rows:int; Cols:int; Cells:Cell[,]}
