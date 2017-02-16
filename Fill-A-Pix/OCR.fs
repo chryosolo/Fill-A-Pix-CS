@@ -64,13 +64,13 @@ let sixClue = { Clue = Given GivenClue.Six; Bitmap = loadBitmap "6" }
 let sevenClue = { Clue = Given GivenClue.Seven; Bitmap = loadBitmap "7" }
 let eightClue = { Clue = Given GivenClue.Eight; Bitmap = loadBitmap "8" }
 let nineClue = { Clue = Given GivenClue.Nine; Bitmap = loadBitmap "9" }
-let clueTemplates = [| blankClue; zeroClue; oneClue; twoClue; threeClue; fourClue; fiveClue; sixClue; sevenClue; eightClue; nineClue |]
+let clueTemplates = seq [ blankClue; zeroClue; oneClue; twoClue; threeClue; fourClue; fiveClue; sixClue; sevenClue; eightClue; nineClue ]
 
 let matchClue (unknown:Bitmap) =
     clueTemplates
-    |> Array.map ( fun clueTemp -> ( clueTemp.Clue, calculateMatch (clueTemp.Bitmap) unknown ) )
-    |> Array.sortBy ( fun (_,matchPercentage) -> matchPercentage )
-    |> Array.head
+    |> Seq.map ( fun clueTemp -> ( clueTemp.Clue, calculateMatch (clueTemp.Bitmap) unknown ) )
+    |> Seq.sortBy ( fun (_,matchPercentage) -> matchPercentage )
+    |> Seq.head
 
 let isRgbMatch (color1:Color) (color2:Color) =
     color1.R = color2.R && color1.G = color2.G && color1.B = color2.B
@@ -128,8 +128,8 @@ let findClues (board:Bitmap) =
         |> Array.where (fun y -> detectRow board 0 y)
         |> Array.pairwise
     // find grid coords and cell clues
-    Array2D.init (colBoundaries.Length) (rowBoundaries.Length)
-        (fun x y ->
+    Array2D.init (rowBoundaries.Length) (colBoundaries.Length)
+        (fun y x ->
             let (x0,x1) = colBoundaries.[x]
             let (y0,y1) = rowBoundaries.[y]
             let rect = new Rectangle( x0+1, y0+1, x1-x0-1, y1-y0-1 )
