@@ -3,13 +3,13 @@
 type CellState =
     | Unknown
     | Filled
-    | Empty
+    | Blank
 
 type ClueState =
     | Active
     | Used
 
-type GivenClue =
+type Clue =
     | Zero = 0
     | One = 1
     | Two = 2
@@ -21,13 +21,9 @@ type GivenClue =
     | Eight = 8
     | Nine = 9
 
-type Clue = 
-    | Blank
-    | Given of GivenClue
-
 type Point = {X:int; Y:int}
 
-type Cell = {State:CellState; Clue:Clue; ClueState:ClueState; Point:Point}
+type Cell = {State:CellState; Clue:Clue option; ClueState:ClueState; Point:Point}
 
 type Board = {Rows:int; Cols:int; Cells:Cell[,]}
 
@@ -39,19 +35,17 @@ type Event =
     | UpdateCellStates of (Cell*CellState) list
     | UpdateClueState of Cell*ClueState
 
-type CellStateBreakdown = (CellState*Cell[])[]
-
 let printCell cell =
     let (surroundFst, surroundSnd) =
         match cell.State with
         | Unknown -> ("(", ")")
         | Filled -> ("«", "»")
-        | Empty -> ("‹", "›")
+        | Blank -> ("‹", "›")
     let clue =
         match cell.Clue with
-        | Blank -> ' '
-        | Given given -> (int given).ToString().ToCharArray() |> Array.head
-    sprintf "%s%c%s" surroundFst clue surroundSnd
+        | Some clue -> (int clue).ToString()
+        | None -> " "
+    sprintf "%s%s%s" surroundFst clue surroundSnd
 
 let printRow board rowIdx =
     let colIdx = [ 0 .. board.Cols-1 ]

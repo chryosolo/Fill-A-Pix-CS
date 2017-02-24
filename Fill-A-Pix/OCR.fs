@@ -5,21 +5,21 @@ open Game
 
 type MatchProbability = Clue * float
 
-type ClueTemplate = { Clue: Clue; Bitmap: Bitmap }
+type ClueTemplate = { Clue: Clue option; Bitmap: Bitmap }
 
 let clueToString =
     function
-    | Blank -> " "
-    | Given GivenClue.Zero -> "0"
-    | Given GivenClue.One -> "1"
-    | Given GivenClue.Two -> "2"
-    | Given GivenClue.Three -> "3"
-    | Given GivenClue.Four -> "4"
-    | Given GivenClue.Five -> "5"
-    | Given GivenClue.Six -> "6"
-    | Given GivenClue.Seven -> "7"
-    | Given GivenClue.Eight -> "8"
-    | Given GivenClue.Nine -> "9"
+    | None -> " "
+    | Some Clue.Zero -> "0"
+    | Some Clue.One -> "1"
+    | Some Clue.Two -> "2"
+    | Some Clue.Three -> "3"
+    | Some Clue.Four -> "4"
+    | Some Clue.Five -> "5"
+    | Some Clue.Six -> "6"
+    | Some Clue.Seven -> "7"
+    | Some Clue.Eight -> "8"
+    | Some Clue.Nine -> "9"
     | _ -> "X"
                 
 let calcDiff (color1:Color) (color2:Color) =
@@ -53,17 +53,17 @@ let loadBitmap name =
     let filename = sprintf "C:\\git\\Sandbox\\Fill-A-Pix\\Fill-A-Pix\\Numbers\\%s.png" name
     new Bitmap( Image.FromFile( filename ) )
 
-let blankClue = { Clue = Blank; Bitmap = loadBitmap "blank" }
-let zeroClue = { Clue = Given GivenClue.Zero; Bitmap = loadBitmap "0" }
-let oneClue = { Clue = Given GivenClue.One; Bitmap = loadBitmap "1" }
-let twoClue = { Clue = Given GivenClue.Two; Bitmap = loadBitmap "2" }
-let threeClue = { Clue = Given GivenClue.Three; Bitmap = loadBitmap "3" }
-let fourClue = { Clue = Given GivenClue.Four; Bitmap = loadBitmap "4" }
-let fiveClue = { Clue = Given GivenClue.Five; Bitmap = loadBitmap "5" }
-let sixClue = { Clue = Given GivenClue.Six; Bitmap = loadBitmap "6" }
-let sevenClue = { Clue = Given GivenClue.Seven; Bitmap = loadBitmap "7" }
-let eightClue = { Clue = Given GivenClue.Eight; Bitmap = loadBitmap "8" }
-let nineClue = { Clue = Given GivenClue.Nine; Bitmap = loadBitmap "9" }
+let blankClue = { Clue = None; Bitmap = loadBitmap "blank" }
+let zeroClue = { Clue = Some Clue.Zero; Bitmap = loadBitmap "0" }
+let oneClue = { Clue = Some Clue.One; Bitmap = loadBitmap "1" }
+let twoClue = { Clue = Some Clue.Two; Bitmap = loadBitmap "2" }
+let threeClue = { Clue = Some Clue.Three; Bitmap = loadBitmap "3" }
+let fourClue = { Clue = Some Clue.Four; Bitmap = loadBitmap "4" }
+let fiveClue = { Clue = Some Clue.Five; Bitmap = loadBitmap "5" }
+let sixClue = { Clue = Some Clue.Six; Bitmap = loadBitmap "6" }
+let sevenClue = { Clue = Some Clue.Seven; Bitmap = loadBitmap "7" }
+let eightClue = { Clue = Some Clue.Eight; Bitmap = loadBitmap "8" }
+let nineClue = { Clue = Some Clue.Nine; Bitmap = loadBitmap "9" }
 let clueTemplates = seq [ blankClue; zeroClue; oneClue; twoClue; threeClue; fourClue; fiveClue; sixClue; sevenClue; eightClue; nineClue ]
 
 let matchClue (unknown:Bitmap) =
