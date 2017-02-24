@@ -59,3 +59,58 @@ let printBoard board =
     rowIdx
     |> List.map (fun row -> printRow board row)
     |> List.reduce (fun row1 row2 -> sprintf "%s\r\n%s" row1 row2)
+
+let isOnBoard board point =
+    point.Y >= 0 && point.X >= 0
+    && point.Y < board.Rows && point.X < board.Cols
+
+let addPoints pnt1 pnt2 =
+    {Y=pnt1.Y + pnt2.Y; X=pnt1.X + pnt2.X}
+
+let getCellNeighborPts board point =
+    let deltas = [|-1;0;1|]
+    let isOnBoard = isOnBoard board
+    Array.allPairs deltas deltas
+    |> Array.map (fun (r,c) -> addPoints point {X=c;Y=r})
+    |> Array.where isOnBoard
+
+let getCellNeighbors board point =
+    getCellNeighborPts board point
+    |> Array.map (fun p -> board.Cells.[p.Y,p.X])
+
+let getCellFromBoard board point =
+    board.Cells.[point.Y,point.X]
+
+let (|FoundStartingClue|_|) (cells:Cell[],cell:Cell) =
+    let total = cells.Length
+    match cell.Clue with
+    | Some Clue.Zero -> StartingClue cell |> Some
+    | Some clue when total = int clue -> StartingClue cell |> Some
+    | _ -> None
+
+let (|FoundAllOfState|_|) state (cells:Cell[],cell:Cell) =
+    let filled = cells |> Array.where (fun cell -> cell.State = state)
+    match cell.Clue with
+    | Some clue when filled.Length = int clue -> Some true
+    | _ -> None
+
+let (|FoundEnoughFilled|_|) (cells:Cell[],cell:Cell) =
+    let filled = cells |> Array.where (fun cell -> cell.State = Filled)
+    match cell.Clue with
+    | Some clue when filled.Length = int clue -> EnoughFilled cell |> Some
+    | _ -> None
+
+let (|FoundEnoughBlank|_|) (cells:Cell[],cell:Cell) =
+    let blank = cells |> Array.where (fun cell -> cell.State = Blank)
+    match cell.Clue with
+    | Some clue when blank.Length = int clue -> EnoughBlank cell |> Some
+    | _ -> None
+
+let checkCell board point =
+    let cells = getCellNeighbors board point
+    let cell = getCellFromBoard board point
+    match cells,cell with
+    | FoundStartingClue starting -> Some starting
+    | FoundEnoughFilled filled -> Some filled
+    | FoundEnoughBlank blank -> Some blank
+    | _ -> None
