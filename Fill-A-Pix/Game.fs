@@ -25,28 +25,33 @@ type Clue =
     | Blank
     | Given of GivenClue
 
-type Cell = {State:CellState; Clue:Clue; ClueState:ClueState}
+type Point = {X:int; Y:int}
+
+type Cell = {State:CellState; Clue:Clue; ClueState:ClueState; Point:Point}
 
 type Board = {Rows:int; Cols:int; Cells:Cell[,]}
 
-type Point = {Row:int; Col:int}
-
 type Event =
-    | FoundStart of Point
-    | EnoughFilled of Point
-    | EnoughBlank of Point
+    | NothingFound
+    | StartingClue of Cell
+    | EnoughFilled of Cell
+    | EnoughBlank of Cell
+    | UpdateCellStates of (Cell*CellState) list
+    | UpdateClueState of Cell*ClueState
+
+type CellStateBreakdown = (CellState*Cell[])[]
 
 let printCell cell =
-    let surround =
+    let (surroundFst, surroundSnd) =
         match cell.State with
-        | Unknown -> '?'
-        | Filled -> 'X'
-        | Empty -> '.'
+        | Unknown -> ("(", ")")
+        | Filled -> ("«", "»")
+        | Empty -> ("‹", "›")
     let clue =
         match cell.Clue with
         | Blank -> ' '
         | Given given -> (int given).ToString().ToCharArray() |> Array.head
-    sprintf "[%c%c%c]" surround clue surround
+    sprintf "%s%c%s" surroundFst clue surroundSnd
 
 let printRow board rowIdx =
     let colIdx = [ 0 .. board.Cols-1 ]
