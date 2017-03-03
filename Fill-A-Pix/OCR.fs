@@ -135,11 +135,13 @@ let findClues (board:Bitmap) =
             let rect = new Rectangle( x0+1, y0+1, x1-x0-1, y1-y0-1 )
             let bitmap = board.Clone( rect, board.PixelFormat )
             let (clue,_) = matchClue bitmap
-            clue )
+            match clue with
+            | None -> None
+            | Some clue -> Some (clue,Active) )
 
-let toBoard (clues:Clue[,]) =
+let toBoard (clues:StatedClue[,]) =
     let cells =
         clues
         |> Array2D.mapi ( fun y x clue ->
-            {State=Unknown; Clue=clue; ClueState=Active; Point={X=x;Y=y}} )
+            {Value=Unknown; Clue=clue; Point={X=x;Y=y}} )
     {Rows=Array2D.length1 clues; Cols=Array2D.length2 clues; Cells=cells}
