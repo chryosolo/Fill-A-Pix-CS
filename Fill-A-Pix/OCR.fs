@@ -1,7 +1,7 @@
-﻿module OCR
+﻿module Fill_A_Pix.OCR
 
 open System.Drawing
-open Game
+open GameTypes
 
 type MatchProbability = Clue * float
 
@@ -50,7 +50,7 @@ let calculateMatch (template:Bitmap) (unknown:Bitmap) : float =
     |> scale template
 
 let loadBitmap name =
-    let filename = sprintf "C:\\git\\Sandbox\\Fill-A-Pix\\Fill-A-Pix\\Numbers\\%s.png" name
+    let filename = sprintf "C:\\git\\MySandbox\\Fill-A-Pix\\Fill-A-Pix\\Numbers\\%s.png" name
     new Bitmap( Image.FromFile( filename ) )
 
 let blankClue = { Clue = None; Bitmap = loadBitmap "blank" }
@@ -79,11 +79,9 @@ let isRgbMatch (color1:Color) (color2:Color) =
 // and reduce using the specified matcher (and/or)
 let detector (matcher:bool->bool->bool) (color:Color) (offsets:(int*int)[]) (window:Bitmap) x y =
     let isRgbMatchForTargetColor = isRgbMatch color
-    let matches =
-        offsets
-        |> Array.map (fun (dx,dy) -> window.GetPixel( x+dx, y+dy ) )
-        |> Array.map isRgbMatchForTargetColor
-    matches
+    offsets
+    |> Array.map (fun (dx,dy) -> window.GetPixel( x+dx, y+dy ) )
+    |> Array.map isRgbMatchForTargetColor
     |> Array.reduce matcher
 
 let detectLeftBoundary = detector (||) Color.White [|(1, 0); (1, -1)|]
@@ -135,11 +133,9 @@ let findClues (board:Bitmap) =
             let rect = new Rectangle( x0+1, y0+1, x1-x0-1, y1-y0-1 )
             let bitmap = board.Clone( rect, board.PixelFormat )
             let (clue,_) = matchClue bitmap
-            match clue with
-            | None -> None
-            | Some clue -> Some (clue,Active) )
+            clue |> Option.map (fun c -> (c,Active)) )
 
-let toBoard (clues:StatedClue[,]) =
+let toBoard (clues:CellClue[,]) =
     let cells =
         clues
         |> Array2D.mapi ( fun y x clue ->

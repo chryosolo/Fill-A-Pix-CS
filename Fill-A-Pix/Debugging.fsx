@@ -1,14 +1,12 @@
-﻿#load "Game.fs"
-#load "OCR.fs"
+﻿#load "GameTypes.fs"
+#load "Utility.fs"
+#r "c:\\git\\MySandbox\\Fill-A-Pix\\packages\\Akka.1.2.3\\lib\\net45\\Akka.dll";;
+#r "c:\\git\\MySandbox\\Fill-A-Pix\\packages\\Akka.FSharp.1.2.3\\lib\\net45\\Akka.FSharp.dll";;
+#r "c:\\git\\MySandbox\\Fill-A-Pix\\Fill-A-Pix UI\\bin\\debug\\Fill-A-Pix UI.dll";;
+#load "Messages.fs";;
+#load "RecognizerActor.fs";;
 #r "System.Drawing.dll"
 
-open Game
-open OCR
-open System.Drawing
+open Fill_A_Pix.RecognizerActor;;
 
-let window = new Bitmap( Image.FromFile( "C:\\git\\Sandbox\\Fill-A-Pix\\2017-03-03.png" ) )
-let boardBitmap = findBoard window
-let clues = findClues boardBitmap
-let board = toBoard clues
-let initialState = (board,[BeginningOfGame])
 

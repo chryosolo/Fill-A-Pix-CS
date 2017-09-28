@@ -1,33 +1,6 @@
-﻿module Game
+﻿module Fill_A_Pix.Game
 
-type CellValue =
-    | Unknown
-    | Filled
-    | Blank
-
-type ClueState =
-    | Active
-    | Used
-
-type Clue =
-    | Zero = 0
-    | One = 1
-    | Two = 2
-    | Three = 3
-    | Four = 4
-    | Five = 5
-    | Six = 6
-    | Seven = 7
-    | Eight = 8
-    | Nine = 9
-
-type StatedClue = (Clue*ClueState) option
-
-type Point = {X:int; Y:int}
-
-type Cell = {Value:CellValue; Clue:StatedClue; Point:Point}
-
-type Board = {Rows:int; Cols:int; Cells:Cell[,]}
+open GameTypes
 
 type FoundUsableClue =
     | BeginningOfGame
@@ -37,10 +10,10 @@ type FoundUsableClue =
     | EnoughBlank of Cell
 
 type UpdateBoardCommand =
-    | UpdateCellValue of Cell*CellValue
+    | UpdateCellState of Cell*CellState
     | UpdateClueState of Cell*ClueState
 
-type GameState = Board * (FoundUsableClue list)
+type GameState = BoardState * (FoundUsableClue list)
 
 let printCell cell =
     let (surroundFst, surroundSnd) =
@@ -57,7 +30,7 @@ let printCell cell =
 let printRow board rowIdx =
     let colIdx = [ 0 .. board.Cols-1 ]
     colIdx
-    |> List.map (fun col -> board.Cells.[rowIdx,col])
+    |> List.map (fun col -> board.Cells.[rowIdx,col] )
     |> List.map printCell
     |> List.reduce (+)
 
@@ -118,14 +91,12 @@ let (|FoundAllOfState|_|) state (cells:Cell[],cell:Cell) =
 
 let (|FoundEnoughFilled|_|) (cells:Cell[],cell:Cell) =
     let filled = cells |> Array.where (fun cell -> cell.Value = Filled)
-    let unknown = cells |> Array.where (fun cell -> cell.Value = Unknown)
     match cell.Clue with
     | Some (clue,_) when filled.Length = (int clue) -> EnoughFilled cell |> Some
     | _ -> None
 
 let (|FoundEnoughBlank|_|) (cells:Cell[],cell:Cell) =
     let blank = cells |> Array.where (fun cell -> cell.Value = Blank)
-    let unknown = cells |> Array.where (fun cell -> cell.Value = Unknown)
     match cell.Clue with
     | Some (clue,_) when cells.Length - blank.Length = (int clue) -> EnoughBlank cell |> Some
     | _ -> None
@@ -138,20 +109,20 @@ let checkCell board cell =
     | FoundEnoughBlank blank -> Some blank
     | _ -> None
 
-let getCluesFromBoard (board:Board) =
+let getCluesFromBoard (board:BoardState) =
     board.Cells
     |> Seq.cast<Cell>
     |> Seq.where (fun cell ->
         match cell.Clue with
-        | Some (clue,Active) -> true
-        | Some (clue,Used) -> false
+        | Some (_,Active) -> true
+        | Some (_,Used) -> false
         | None -> false )
 
 let getUpdateCellValuesEvent filter board cell newValue =
     getCellNeighbors board cell
     |> Array.toList
     |> List.where filter
-    |> List.map (fun cell -> UpdateCellValue (cell,newValue))
+    |> List.map (fun cell -> UpdateCellState (cell,newValue))
     |> List.append [UpdateClueState (cell,Used)]
 
 let getUpdateValuesForStart = getUpdateCellValuesEvent (fun _ -> true )
@@ -170,20 +141,24 @@ let getBoardChangeCommands board (clue:FoundUsableClue) =
     | EnoughFilled cell -> getUpdateValuesForEnough board cell Blank
     | EnoughBlank cell -> getUpdateValuesForEnough board cell Filled
 
+let getCellCoords cell = (cell.Point.X, cell.Point.Y)
+
 let processUpdateBoardCommand board command =
     match command with
-    | UpdateCellValue (cell,newValue) ->
+    | UpdateCellState (cell,newValue) ->
+        let (x,y) = getCellCoords cell
         let cells = board.Cells |> Array2D.copy
-        let cell' = cells.[cell.Point.Y,cell.Point.X]
-        cells.SetValue({cell' with Value=newValue},cell.Point.Y,cell.Point.X)
+        let cell' = cells.[y,x]
+        cells.SetValue({cell' with Value=newValue},x)
         {board with Cells = cells}
     | UpdateClueState (cell,newState) ->
         match cell.Clue with
         | None -> failwith "Cannot update clue state if cell has no clue."
         | Some (clue,_) ->
+            let (x,y) = getCellCoords cell
             let cells = board.Cells |> Array2D.copy
-            let cell' = cells.[cell.Point.Y,cell.Point.X]
-            cells.SetValue({cell' with Clue=Some(clue,newState)},cell.Point.Y,cell.Point.X)
+            let cell' = cells.[y,x]
+            cells.SetValue({cell' with Clue=Some(clue,newState)},y,x)
             {board with Cells = cells}
 
 let processUpdateBoardCommands board commands =
