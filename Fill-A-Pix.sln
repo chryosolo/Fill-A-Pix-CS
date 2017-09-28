@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26206.0
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fill-A-Pix", "Fill-A-Pix\Fill-A-Pix.fsproj", "{4C3E7D4E-44D7-4501-A883-F899DAC44988}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fill-A-Pix UI", "Fill-A-Pix UI\Fill-A-Pix UI.csproj", "{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{4C3E7D4E-44D7-4501-A883-F899DAC44988}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C3E7D4E-44D7-4501-A883-F899DAC44988}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C3E7D4E-44D7-4501-A883-F899DAC44988}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E4A00058-EA20-45D7-A27B-CF4CF8D3F74B}
 	EndGlobalSection
 EndGlobal
