@@ -18,13 +18,39 @@ let stepBoard (board:BoardState) cell (stepFunc:Cell->Cell) =
     {board with Cells=cells}
 
 
+let getCellCoords cell = (cell.Point.X, cell.Point.Y)
+
+let processUpdateBoardCommand board command =
+    match command with
+    | UpdateCellValue (cell,newValue) ->
+        let (x,y) = getCellCoords cell
+        let cells = board.Cells |> Array2D.copy
+        let cell' = cells.[x,y]
+        cells.SetValue({cell' with Value=newValue},x,y)
+        {board with Cells = cells}
+    | UpdateClueState (cell,newState) ->
+        match cell.Clue with
+        | None -> failwith "Cannot update clue state if cell has no clue."
+        | Some (clue,_) ->
+            let (x,y) = getCellCoords cell
+            let cells = board.Cells |> Array2D.copy
+            let cell' = cells.[x,y]
+            cells.SetValue({cell' with Clue=Some(clue,newState)},x,y)
+            {board with Cells = cells}
+
+let processUpdateBoardCommands board commands =
+    commands
+    |> List.fold processUpdateBoardCommand board
+
+
 let actor (self:Actor<obj>) =
+    let game = spawn self "game" GameActor.actor
     let recogConfig = [SpawnOption.Router(SmallestMailboxPool( 8 ))]
     let coord = self.Context.Parent
     let recog = spawnOpt self "recog" (RecognizerActor.actor self.Self) recogConfig
 
     // when ready we update board state until stopped
-    let rec ready (board:BoardState) = actor {
+    let rec solving (state:BoardState) = actor {
         let! msg = self.Receive()
         match msg with
         | :? Log -> coord.Forward msg
@@ -33,26 +59,30 @@ let actor (self:Actor<obj>) =
             match msg' with
             | SetBoardState newState ->
                 coord <! (self, "ready.SetBoardState")
-                return! ready newState
+                return! solving newState
+        | :? StepMoveMsg -> game <! StepMoveFrom state
         // update board state by updating a cell's state or clue
-        | :? UpdateBoardStateMsg as msg' ->
-            match msg' with
-            | UpdateCellState (cell,state) ->
-                coord <! (self, "ready.UpdateCellState")
-                let board' = stepBoard board cell (fun c -> {c with Value=state})
-                return! ready board'
-            | UpdateClueState (cell,state) ->
-                coord <! (self, "ready.UpdateClueState")
-                let newClue = match cell.Clue with
-                              | None -> None
-                              | Some (clue,_) -> Some (clue,state)
-                let board' = stepBoard board cell (fun c -> {c with Clue=newClue})
-                return! ready board'
-        // anything else is unhandled
+        | :? FoundMoveMsg as msg' ->
+            coord <! (self, sprintf "solving.FoundMove %A" msg')
+            let state' =
+                match msg' with
+                | FoundEndOfGame -> state
+                | FoundZeroClue list
+                | FoundStartingClue list
+                | FoundEnoughFilled list
+                | FoundEnoughBlank list ->
+                    processUpdateBoardCommands state list
+            let changed =
+                state'.Cells
+                |> Seq.cast<Cell>
+                |> Seq.where( fun c -> c <> state.Cells.[c.Point.X,c.Point.Y] )
+                |> Seq.toArray
+            coord <! DrawCells changed
+            return! solving state'
         | _ ->
             coord <! (self, sprintf "ready.Unhandled: %A" msg)
             self.Unhandled msg
-        return! ready board
+        return! solving state
     }
 
     // when bounded we search for clues and when all cells have been
@@ -62,7 +92,6 @@ let actor (self:Actor<obj>) =
         match msg with
         | :? Log -> coord.Forward msg
         // forward to coord
-        | :? FoundSixMsg -> coord.Forward msg
         | :? CluesFinalizedMsg as msg' ->
             match msg' with
             | CluesFinalized cells ->
@@ -72,7 +101,7 @@ let actor (self:Actor<obj>) =
                 let cy = Array2D.length2 cells
                 let board = {Rows=cy; Cols=cx; Cells=cells}
                 coord <! SetBoardState board
-                return! ready board
+                return! solving board
         | :? FoundClueMsg as msg' ->
             match msg' with
             | FoundClue (CoordX x, CoordY y, clue) ->
@@ -84,7 +113,7 @@ let actor (self:Actor<obj>) =
                 let isStillFinding =
                     cells
                     |> Seq.cast<Cell>
-                    |> Seq.exists (fun {Value=v; Clue=_; Point=_} -> v = Init)
+                    |> Seq.exists (fun c -> c.Value=Init)
                 if not isStillFinding then self.Self <! CluesFinalized cells
         // anything else is unhandled
         | _ ->

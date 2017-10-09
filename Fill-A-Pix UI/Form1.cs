@@ -7,16 +7,41 @@ using Akka.Actor;
 
 namespace Fill_A_Pix_UI
 {
+    public enum UiClueState
+    {
+        Active,
+        Used
+    }
+
+
+    public enum UiCellValue
+    {
+        Unknown,
+        Empty,
+        Filled
+    }
+
+
     public partial class FrmMain : Form
     {
         private IActorRef _actor;
-        private readonly Pen _penLine;
         private Scaler _scaler;
         private readonly LinkedList<UiCommand> _uiCommandsReceived;
         private LinkedListNode<UiCommand> _runTo;
         private int _cols;
         private int _rows;
 
+        private readonly StringFormat _clueFormat =
+            new StringFormat { Alignment = StringAlignment.Center };
+
+
+        private readonly Pen _penLine =
+            new Pen( Color.Red, 3 ) { DashPattern = new[] { 5.0F, 5.0F } };
+        private readonly Pen _penClueHint = new Pen( Color.Blue, 2 );
+        private readonly Pen _penClueBoundary = new Pen( Color.DimGray, 2 );
+        private readonly Brush _brushFilled = new SolidBrush( Color.Black );
+        private readonly Brush _brushEmpty = new SolidBrush( Color.White );
+        private readonly Brush _brushUnknown = new SolidBrush( Color.FromArgb( 99, 99, 140 ) );
 
         public FrmMain()
         {
@@ -41,7 +66,7 @@ namespace Fill_A_Pix_UI
             tsbSolve.Image= FontAwesome.Type.FastForward.AsImage();
 
             _uiCommandsReceived = new LinkedList<UiCommand>();
-            _penLine = new Pen( Color.Red, 3 ){ DashPattern = new[] { 5.0F, 5.0F } };
+            //_penLine = new Pen( Color.Red, 3 ){ DashPattern = new[] { 5.0F, 5.0F } };
         }
 
         public void SetActor( IActorRef actor )
@@ -77,7 +102,6 @@ namespace Fill_A_Pix_UI
 
             _runTo = _runTo.Next;
             UpdateEnabled();
-            //Refresh();
             _runTo?.Value.Draw();
         }
 
@@ -172,6 +196,11 @@ namespace Fill_A_Pix_UI
             }
         }
 
+        public void AddClear()
+        {
+            _uiCommandsReceived.AddLast( new UiShowImage( DoClear ) );
+        }
+
         public void LogShowImage( Bitmap bmp ) => AddUiShowImageCommand( () => DoShowImage( bmp ) );
         public void LogDrawHLine( int y ) => AddUiOverlayCommand( () => DoDrawHLine( y ) );
         public void LogDrawVLine( int x ) => AddUiOverlayCommand( () => DoDrawVLine( x ) );
@@ -180,6 +209,22 @@ namespace Fill_A_Pix_UI
             => AddUiOverlayCommand( () => DoShowClueOverlay( col, row, null ) );
         public void LogClueOverlay( int col, int row, int clue )
             => AddUiOverlayCommand( () => DoShowClueOverlay( col, row, clue ) );
+
+        public void LogShowClue( int col, int row, int? number, UiClueState clue, UiCellValue cell )
+            => AddUiOverlayCommand( () => DoShowClue( col, row, number, clue, cell ) );
+
+        public void LogClear() => AddClear();
+
+
+        public void DoClear()
+        {
+            _scaler = new Scaler( panel1.Size,
+                new Size( _scaler.ImageWidth, _scaler.ImageHeight ) );
+            using( var g = panel1.CreateGraphics() )
+            {
+                g.Clear( DefaultBackColor );
+            }
+        }
 
 
         public void DoShowImage( Bitmap bitmap )
@@ -255,7 +300,8 @@ namespace Fill_A_Pix_UI
 
             using( var g = panel1.CreateGraphics() )
             {
-                g.DrawRectangle( new Pen( Color.Blue, 2 ), new Rectangle( p0.X, p0.Y, p1.X - p0.X, p1.Y - p0.Y) );
+                g.DrawRectangle( _penClueHint,
+                    new Rectangle( p0.X, p0.Y, p1.X - p0.X, p1.Y - p0.Y ) );
                 if( number.HasValue )
                     g.DrawString( number.Value.ToString(), DefaultFont,
                         new SolidBrush( Color.Blue ), p0.X + 4, p0.Y + 4 );
@@ -263,9 +309,47 @@ namespace Fill_A_Pix_UI
         }
 
 
+        public void DoShowClue( int col, int row, int? number, UiClueState clue, UiCellValue cell )
+        {
+            var width = _scaler.ImageWidth;
+            var height = _scaler.ImageHeight;
+            var x0 = width * Convert.ToSingle( col ) / Convert.ToSingle( _cols );
+            var x1 = width * Convert.ToSingle( col + 1 ) / Convert.ToSingle( _cols );
+            var y0 = height * Convert.ToSingle( row ) / Convert.ToSingle( _rows );
+            var y1 = height * Convert.ToSingle( row + 1 ) / Convert.ToSingle( _rows );
+            var p0 = Point.Round( _scaler.ImageToScreen( x0, y0 ) );
+            var p1 = Point.Round( _scaler.ImageToScreen( x1, y1 ) );
+
+            var rect = new Rectangle( p0.X, p0.Y, p1.X - p0.X, p1.Y - p0.Y );
+            var fillBrush = cell == UiCellValue.Unknown
+                ? _brushUnknown
+                : cell == UiCellValue.Filled
+                    ? _brushFilled
+                    : _brushEmpty;
+            var textBrush = clue == UiClueState.Used
+                ? new SolidBrush( Color.DimGray )
+                : cell == UiCellValue.Empty
+                    ? new SolidBrush( Color.Black )
+                    : new SolidBrush( Color.White );
+
+            using( var g = panel1.CreateGraphics() )
+            {
+                g.FillRectangle( fillBrush, rect );
+                g.DrawRectangle( _penClueBoundary, rect );
+                if ( number != null )
+                    g.DrawString( number.ToString(), new Font( DefaultFont.Name, _scaler.Scale * 20 ), textBrush, rect, _clueFormat );
+            }
+        }
+
+
         private void FrmMain_Resize( object sender, EventArgs e )
         {
             panel1.Refresh();
+        }
+
+        private void panel1_Click( object sender, EventArgs e )
+        {
+            _actor.Tell( new UiGameStep() );
         }
     }
 

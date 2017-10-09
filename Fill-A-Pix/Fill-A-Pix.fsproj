@@ -58,12 +58,10 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="GameTypes.fs" />
     <Compile Include="Utility.fs" />
-    <Compile Include="Game.fs" />
     <Compile Include="Messages.fs" />
-    <Compile Include="OCR.fs" />
     <Compile Include="RecognizerActor.fs" />
-    <Compile Include="BoardActor.fs" />
     <Compile Include="GameActor.fs" />
+    <Compile Include="BoardActor.fs" />
     <Compile Include="CoordinatorActor.fs" />
     <Compile Include="UiActor.fs" />
     <Compile Include="Program.fs" />

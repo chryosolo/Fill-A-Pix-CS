@@ -15,7 +15,7 @@ type CoordY = | CoordY of int
 type PixelRect = {Top:PixelY; Bottom:PixelY; Left:PixelX; Right:PixelX}
 
 
-type CellState =
+type CellValue =
     | Init
     | Unknown
     | Filled
@@ -41,7 +41,10 @@ type CellClue = (Clue*ClueState) option
 
 type Point = {X:int; Y:int}
 
-type Cell = {Value:CellState; Clue:CellClue; Point:Point}
+type Cell = {Value:CellValue; Clue:CellClue; Point:Point}
 
 type BoardState = {Rows:int; Cols:int; Cells:Cell[,]}
+
+type UpdateBoardState = | UpdateCellValue of Cell*CellValue
+                        | UpdateClueState of Cell*ClueState
 

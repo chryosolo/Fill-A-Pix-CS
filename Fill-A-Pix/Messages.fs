@@ -29,19 +29,17 @@ type CluesFinalizedMsg = | CluesFinalized of Cell[,]
 type SetBoardStateMsg = | SetBoardState of BoardState
 
 // play game
-type StepMoveMsg = | StepMove // to coordinator
-type FoundMoveMsg = | BeginningOfGame
-                    | NothingFound
-                    | StartingClue of Cell*BoardState
-                    | EnoughFilled of Cell*BoardState
-                    | EnoughBlank of Cell*BoardState
-type UpdateBoardStateMsg = | UpdateCellState of Cell*CellState
-                           | UpdateClueState of Cell*ClueState
+type StepMoveMsg = | StepMove
+type StepMoveFromMsg = | StepMoveFrom of BoardState
+type FoundMoveMsg = | FoundZeroClue of UpdateBoardState list
+                    | FoundStartingClue of UpdateBoardState list
+                    | FoundEnoughFilled of UpdateBoardState list
+                    | FoundEnoughBlank of UpdateBoardState list
+                    | FoundEndOfGame
 
 type SetUiMsg = | SetUi of IActorRef
 type SetUiFormMsg = | SetUiForm of FrmMain
-
-type FoundSixMsg = | FoundSix of CoordX * CoordY * (Clue option)*Pixels
+type DrawCellsMsg = | DrawCells of Cell[]
 
 type Log = Actor<obj>*string
 

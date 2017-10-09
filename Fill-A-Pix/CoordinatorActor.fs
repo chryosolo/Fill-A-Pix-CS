@@ -9,10 +9,9 @@ open Utility
 
 let actor (self:Actor<obj>) =
     let board = spawn self "board" BoardActor.actor
-    let game = spawn self "game" GameActor.actor
     let logger = spawn self "log'" (actorOf logHandler)
 
-    // coordinator is currently working on a board
+    // coordinator is currently working on recognizing
     let rec hasBitmap (ui:IActorRef) (bitmap:Bitmap) = actor {
         let! msg = self.Receive()
         match msg with
@@ -23,16 +22,15 @@ let actor (self:Actor<obj>) =
                 let clipped = bitmap |> clipBitmap rect
                 ui <! ShowBoardImage (BoardBitmap clipped)
                 return! hasBitmap ui clipped
-        // forward to game
-        | :? StepMoveMsg -> game.Forward msg
-        | :? FoundSixMsg -> ui.Forward msg
+        | :? StepMoveMsg -> board.Forward msg
         // forward to UI
         | :? FoundSideMsg
         | :? SidesFinalizedMsg
         | :? FoundCellsMsg
         | :? FoundClueMsg
         | :? CluesFinalizedMsg
-        | :? FoundMoveMsg ->
+        | :? SetBoardStateMsg
+        | :? DrawCellsMsg ->
             logger <! (self, sprintf "hasBitmap.[UI Message] %A" msg)
             ui.Forward msg
         | _ ->

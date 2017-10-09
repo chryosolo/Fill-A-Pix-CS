@@ -6,7 +6,7 @@ namespace Fill_A_Pix_UI
 {
     public class Scaler
     {
-        private readonly float _scale;
+        public readonly float Scale;
         private readonly int _xOffset;
         private readonly int _yOffset;
         public readonly int ImageWidth;
@@ -22,7 +22,7 @@ namespace Fill_A_Pix_UI
 
             var xScale = Convert.ToSingle( wSize.Width ) / Convert.ToSingle( iSize.Width );
             var yScale = Convert.ToSingle( wSize.Height ) / Convert.ToSingle( iSize.Height );
-            _scale = Math.Min( xScale, yScale );
+            Scale = Math.Min( xScale, yScale );
 
             // width smaller, so needs bigger scale -- x gets offset
             if( xScale > yScale )
@@ -49,16 +49,16 @@ namespace Fill_A_Pix_UI
 
         public PointF ImageToScreen( Point p )
         {
-            var screenX = _xOffset + ( p.X * _scale );
-            var screenY = _yOffset + ( p.Y * _scale );
+            var screenX = _xOffset + ( p.X * Scale);
+            var screenY = _yOffset + ( p.Y * Scale);
             return new PointF( screenX, screenY );
         }
 
 
         public PointF ImageToScreen( PointF p )
         {
-            var screenX = _xOffset + ( p.X * _scale );
-            var screenY = _yOffset + ( p.Y * _scale );
+            var screenX = _xOffset + ( p.X * Scale);
+            var screenY = _yOffset + ( p.Y * Scale);
             return new PointF( screenX, screenY );
         }
     }

@@ -1,11 +1,36 @@
 ﻿module Fill_A_Pix.UiActor
 
+open System
 open Akka.FSharp
 open Akka.Actor
 open GameTypes
 open Messages
 open Fill_A_Pix_UI
 open Fill_A_Pix.Utility
+
+let drawCell (form:FrmMain) cell =
+    let cellValue = match cell.Value with
+                    | Filled -> UiCellValue.Filled
+                    | Blank -> UiCellValue.Empty
+                    | _ -> UiCellValue.Unknown
+    let (clueVal, clueState) =
+        match cell.Clue with
+        | None -> (Nullable(), UiClueState.Used)
+        | Some (cv, Active) -> (Nullable(int cv), UiClueState.Active)
+        | Some (cv, Used) -> (Nullable(int cv), UiClueState.Used)
+    form.LogShowClue( cell.Point.X, cell.Point.Y, clueVal, clueState, cellValue )
+
+let processUpdateCommand (frmMain:FrmMain) cmd =
+    match cmd with
+    | UpdateCellValue (cell,newValue) ->
+        let cell' = {cell with Value=newValue}
+        drawCell frmMain cell'
+    | UpdateClueState (cell,newState) ->
+        let clue' = 
+            match cell.Clue with
+            | None -> None
+            | Some (clue,_) -> Some (clue,newState)
+        drawCell frmMain {cell with Clue=clue'}
 
 
 let actor (form:FrmMain) (self:Actor<obj>) =
@@ -34,15 +59,6 @@ let actor (form:FrmMain) (self:Actor<obj>) =
             | ShowBoardImage (BoardBitmap bitmap) ->
                 sender <! (self, "ShowBoardImage")
                 form.LogShowImage( bitmap )
-        | :? FoundSixMsg as msg' ->
-            match msg' with
-            | FoundSix (CoordX x, CoordY y, None, pixels) ->
-                let bitmap = pixels |> toBitmap
-                form.LogShowImage( bitmap )
-            | FoundSix (CoordX x, CoordY y, Some clue, pixels) ->
-                let bitmap = pixels |> toBitmap
-                form.LogShowImage( bitmap )
-                form.LogClueOverlay( x, y, int clue)
         // board sides have been found
         | :? FoundSideMsg as msg' ->
             match msg' with
@@ -69,7 +85,21 @@ let actor (form:FrmMain) (self:Actor<obj>) =
                 form.LogClueOverlay( cx, cy, int clue )
             | FoundClue (CoordX cx, CoordY cy, None) ->
                 form.LogBlankOverlay( cx, cy )
-        //| :? CluesFinalizedMsg
+        | :? CluesFinalizedMsg as msg' ->
+            match msg' with
+            | CluesFinalized cells ->
+                form.LogClear();
+                for cell in cells |> Seq.cast<Cell> do
+                    drawCell form cell
+        | :? SetBoardStateMsg as msg' ->
+            match msg' with
+            | SetBoardState state ->
+                for cell in state.Cells |> Seq.cast<Cell> do
+                    drawCell form cell
+        | :? DrawCellsMsg as msg' ->
+            match msg' with
+            | DrawCells cells ->
+                cells |> Array.iter (drawCell form)
         // Unhandled
         | _ ->
             sender <! (self, sprintf "Unhandled: %A" msg)
