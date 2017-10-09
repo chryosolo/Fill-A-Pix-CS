@@ -1,11 +1,7 @@
 ﻿module Fill_A_Pix.Messages
 
-open System.Drawing
-open System.IO
 open GameTypes
-open Akka.FSharp
 open Akka.Actor
-open System.Windows.Forms
 open Fill_A_Pix_UI
 
 // Select a File
@@ -40,13 +36,3 @@ type FoundMoveMsg = | FoundZeroClue of UpdateBoardState list
 type SetUiMsg = | SetUi of IActorRef
 type SetUiFormMsg = | SetUiForm of FrmMain
 type DrawCellsMsg = | DrawCells of Cell[]
-
-type Log = Actor<obj>*string
-
-let logHandler (msg:Log) =
-    let (actor,action) = msg
-    let entry =
-        sprintf "%s: %s"
-            (actor.Self.Path.ToStringWithoutAddress())
-            action
-    File.AppendAllLines( "C:\\log.txt", [|entry|] )

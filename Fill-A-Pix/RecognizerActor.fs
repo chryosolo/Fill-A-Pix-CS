@@ -3,7 +3,6 @@
 open Akka.FSharp
 open Akka.Actor
 open System.Drawing
-open System.Drawing.Imaging
 open GameTypes
 open Messages
 open Fill_A_Pix.Utility
@@ -13,27 +12,28 @@ type MatchProbability = Clue * float
 type ClueTemplate = { Clue: Clue option; Pixels: Pixels }
 
 
-let loadBitmap name =
+let loadPixels name =
     let filename = sprintf "C:\\git\\MySandbox\\Fill-A-Pix\\Fill-A-Pix\\Numbers\\%s.png" name
     new Bitmap( Image.FromFile( filename ) )
+    |> toPixels
 
 
-let templateOf name clue =
-    let pixels = loadBitmap name |> toPixels
+let templateOf clue =
+    let pixels = int clue |> sprintf "%i" |> loadPixels
     {Clue=Some clue; Pixels=pixels}
 
 
-let blank = {Clue=None; Pixels=loadBitmap "blank" |> toPixels}
-let zero = Clue.Zero |> templateOf "0"
-let one = Clue.One |> templateOf "1"
-let two = Clue.Two |> templateOf "2"
-let three = Clue.Three |> templateOf "3"
-let four = Clue.Four |> templateOf "4"
-let five = Clue.Five |> templateOf "5"
-let six = Clue.Six |> templateOf "6"
-let seven = Clue.Seven |> templateOf "7"
-let eight = Clue.Eight |> templateOf "8"
-let nine = Clue.Nine |> templateOf "9"
+let blank = {Clue=None; Pixels=loadPixels "blank"}
+let zero = Clue.Zero |> templateOf
+let one = Clue.One |> templateOf
+let two = Clue.Two |> templateOf
+let three = Clue.Three |> templateOf
+let four = Clue.Four |> templateOf
+let five = Clue.Five |> templateOf
+let six = Clue.Six |> templateOf
+let seven = Clue.Seven |> templateOf
+let eight = Clue.Eight |> templateOf
+let nine = Clue.Nine |> templateOf
 let clueTemplates = seq [blank; zero; one; two; three; four; five; six; seven; eight; nine]
 
 
@@ -105,7 +105,7 @@ let findBoard window boardRef =
         |> Seq.skipWhile (fun x -> not ( getLeftBorder window x halfHeight )) 
         |> Seq.head
     boardRef <! (leftX |> PixelX |> FoundLeftSide)
-    // remaining coords get Pixel-ated because they're not used
+    // remaining coords get Pixel-ated because they're not used elsewhere
     let bottomY =
         seq [ height-1 .. -1 .. halfHeight ] // work from bottom to center
         |> Seq.skipWhile (fun y -> not ( getBottomBorder window halfWidth y ))
@@ -153,26 +153,19 @@ let actor (boardRef:IActorRef) (self:Actor<obj>) =
         match msg with
         | :? DetectSidesMsg as msg' ->
             match msg' with
-            | DetectSides window ->
-                boardRef <! (self, "DetectSides")
-                findBoard window boardRef
+            | DetectSides window -> findBoard window boardRef
         | :? DetectCellsMsg as msg' ->
             match msg' with
             | DetectCells board ->
-                boardRef <! (self, "DetectCells")
                 let boundaries = getCellBoundaries board
                 boardRef <! FoundCells boundaries
         | :? DetectClueMsg as msg' ->
             match msg' with
             | DetectClue (cx, cy, cell) ->
-                boardRef <! (self, sprintf "DetectClue x:%A y:%A" cx cy)
                 let (clue,delta) = matchClue cell
-                boardRef <! (self, sprintf "FoundClue %A %A" clue delta)
-                //boardRef <! FoundSix (cx,cy,clue,cell)
                 boardRef <! FoundClue (cx,cy,clue)
         // anything else is unhandled
         | _ ->
-            boardRef <! (self, sprintf "Unhandled: %A" msg)
             self.Unhandled msg
         return! loop ()
     }

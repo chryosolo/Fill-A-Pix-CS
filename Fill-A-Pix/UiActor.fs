@@ -6,7 +6,6 @@ open Akka.Actor
 open GameTypes
 open Messages
 open Fill_A_Pix_UI
-open Fill_A_Pix.Utility
 
 let drawCell (form:FrmMain) cell =
     let cellValue = match cell.Value with
@@ -36,7 +35,6 @@ let processUpdateCommand (frmMain:FrmMain) cmd =
 let actor (form:FrmMain) (self:Actor<obj>) =
     let rec loop (coord:IActorRef option) = actor {
         let! msg = self.Receive()
-        let sender = self.Sender()
         match msg with
         // UI has requested a new file be opened
         | :? UiImageOpen as uio ->
@@ -45,65 +43,43 @@ let actor (form:FrmMain) (self:Actor<obj>) =
             let newCoord = spawn (self.Context.System) "coordinator" CoordinatorActor.actor
             // inform coordinator of ui actor existence
             newCoord <! SetUi self.Self
-            newCoord <! (self, sprintf "UiImageOpen %s" uio.Filename)
             newCoord <! OpenBitmapFile (BitmapFile uio.Filename)
             return! loop (Some newCoord)
-        | :? UiGameStep as ugs ->
+        | :? UiGameStep ->
             coord |> Option.map (fun coordRef -> coordRef <! StepMove) |> ignore
         // coordinator has requested UI show an image
         | :? ShowImageMsg as msg' ->
             match msg' with
-            | ShowWindowImage (WindowBitmap bitmap) ->
-                sender <! (self, "ShowWindowImage")
-                form.LogSetWindow( bitmap )
-            | ShowBoardImage (BoardBitmap bitmap) ->
-                sender <! (self, "ShowBoardImage")
-                form.LogShowImage( bitmap )
+            | ShowWindowImage (WindowBitmap bitmap) -> form.LogSetWindow( bitmap )
+            | ShowBoardImage (BoardBitmap bitmap) -> form.LogShowImage( bitmap )
         // board sides have been found
         | :? FoundSideMsg as msg' ->
             match msg' with
-            | FoundTopSide (PixelY py) ->
-                coord |> Option.map (fun c -> c <! (self, sprintf "FoundTopSide y:%i" py) ) |> ignore
-                form.LogDrawHLine( py )
-            | FoundBottomSide (PixelY py) ->
-                coord |> Option.map (fun c -> c <! (self, sprintf "FoundBottomSide y:%i" py)) |> ignore
-                form.LogDrawHLine( py )
-            | FoundLeftSide (PixelX px) ->
-                coord |> Option.map (fun c -> c <! (self, sprintf "FoundLeftSide x:%i" px)) |> ignore
-                form.LogDrawVLine( px )
-            | FoundRightSide (PixelX px) ->
-                coord |> Option.map (fun c -> c <! (self, sprintf "FoundRightSide x:%i" px)) |> ignore
-                form.LogDrawVLine( px )
+            | FoundTopSide (PixelY py) -> form.LogDrawHLine( py )
+            | FoundBottomSide (PixelY py) -> form.LogDrawHLine( py )
+            | FoundLeftSide (PixelX px) -> form.LogDrawVLine( px )
+            | FoundRightSide (PixelX px) -> form.LogDrawVLine( px )
         //| :? SidesFinalizedMsg  
         | :? FoundCellsMsg as msg' ->
             match msg' with
             | FoundCells (cols,rows) -> form.LogSizing(cols.Length, rows.Length)
         | :? FoundClueMsg as msg' ->
-            coord |> Option.map (fun c -> c <! (self, sprintf "FoundClue %A" msg') ) |> ignore
             match msg' with
-            | FoundClue (CoordX cx, CoordY cy, Some clue) ->
-                form.LogClueOverlay( cx, cy, int clue )
-            | FoundClue (CoordX cx, CoordY cy, None) ->
-                form.LogBlankOverlay( cx, cy )
+            | FoundClue (CoordX cx, CoordY cy, Some clue) -> form.LogClueOverlay( cx, cy, int clue )
+            | FoundClue (CoordX cx, CoordY cy, None) -> form.LogBlankOverlay( cx, cy )
         | :? CluesFinalizedMsg as msg' ->
             match msg' with
             | CluesFinalized cells ->
                 form.LogClear();
-                for cell in cells |> Seq.cast<Cell> do
-                    drawCell form cell
+                cells |> Seq.cast<Cell> |> Seq.iter (drawCell form)
         | :? SetBoardStateMsg as msg' ->
             match msg' with
-            | SetBoardState state ->
-                for cell in state.Cells |> Seq.cast<Cell> do
-                    drawCell form cell
+            | SetBoardState state -> state.Cells |> Seq.cast<Cell> |> Seq.iter (drawCell form)
         | :? DrawCellsMsg as msg' ->
             match msg' with
-            | DrawCells cells ->
-                cells |> Array.iter (drawCell form)
+            | DrawCells cells -> cells |> Array.iter (drawCell form)
         // Unhandled
-        | _ ->
-            sender <! (self, sprintf "Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
 
         return! loop coord
     }

@@ -9,15 +9,6 @@ open Messages
 open Utility
 
 
-let stepBoard (board:BoardState) cell (stepFunc:Cell->Cell) =
-    let (x,y) = cell.Point.X,cell.Point.Y
-    let cells = board.Cells |> Array2D.copy
-    let oldCell = cells.[y,x]
-    let newCell = oldCell |> stepFunc
-    cells.SetValue(newCell,y,x)
-    {board with Cells=cells}
-
-
 let getCellCoords cell = (cell.Point.X, cell.Point.Y)
 
 let processUpdateBoardCommand board command =
@@ -45,7 +36,7 @@ let processUpdateBoardCommands board commands =
 
 let actor (self:Actor<obj>) =
     let game = spawn self "game" GameActor.actor
-    let recogConfig = [SpawnOption.Router(SmallestMailboxPool( 8 ))]
+    let recogConfig = [SpawnOption.Router(SmallestMailboxPool( 16 ))]
     let coord = self.Context.Parent
     let recog = spawnOpt self "recog" (RecognizerActor.actor self.Self) recogConfig
 
@@ -53,25 +44,20 @@ let actor (self:Actor<obj>) =
     let rec solving (state:BoardState) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log -> coord.Forward msg
         // update board state directly to given new state
         | :? SetBoardStateMsg as msg' ->
             match msg' with
-            | SetBoardState newState ->
-                coord <! (self, "ready.SetBoardState")
-                return! solving newState
+            | SetBoardState newState -> return! solving newState
         | :? StepMoveMsg -> game <! StepMoveFrom state
         // update board state by updating a cell's state or clue
         | :? FoundMoveMsg as msg' ->
-            coord <! (self, sprintf "solving.FoundMove %A" msg')
             let state' =
                 match msg' with
                 | FoundEndOfGame -> state
                 | FoundZeroClue list
                 | FoundStartingClue list
                 | FoundEnoughFilled list
-                | FoundEnoughBlank list ->
-                    processUpdateBoardCommands state list
+                | FoundEnoughBlank list -> processUpdateBoardCommands state list
             let changed =
                 state'.Cells
                 |> Seq.cast<Cell>
@@ -79,9 +65,7 @@ let actor (self:Actor<obj>) =
                 |> Seq.toArray
             coord <! DrawCells changed
             return! solving state'
-        | _ ->
-            coord <! (self, sprintf "ready.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
         return! solving state
     }
 
@@ -90,12 +74,10 @@ let actor (self:Actor<obj>) =
     let rec sized (cells:Cell[,]) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log -> coord.Forward msg
         // forward to coord
         | :? CluesFinalizedMsg as msg' ->
             match msg' with
             | CluesFinalized cells ->
-                coord <! (self, "sized.CluesFinalized")
                 coord <! msg
                 let cx = Array2D.length1 cells
                 let cy = Array2D.length2 cells
@@ -105,7 +87,6 @@ let actor (self:Actor<obj>) =
         | :? FoundClueMsg as msg' ->
             match msg' with
             | FoundClue (CoordX x, CoordY y, clue) ->
-                coord <! (self, sprintf "sized.FoundClue x:%i, y:%i, clue:%A" x y clue)
                 coord.Forward msg
                 let cellClue = clue |> Option.map (fun c -> (c,Active))
                 let cell = {Value=Unknown; Clue=cellClue; Point={X=x; Y=y}}
@@ -116,21 +97,17 @@ let actor (self:Actor<obj>) =
                     |> Seq.exists (fun c -> c.Value=Init)
                 if not isStillFinding then self.Self <! CluesFinalized cells
         // anything else is unhandled
-        | _ ->
-            coord <! (self, sprintf "sized.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
         return! sized cells
     }
 
     let rec bounded (board:Pixels) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log -> coord.Forward msg
         | :? FoundCellsMsg as msg' ->
             match msg' with
             | FoundCells (cols, rows) ->
                 let (x,y) = cols.Length,rows.Length
-                coord <! (self, sprintf "bounded.FoundCells %i by %i" x y)
                 coord.Forward msg
                 Array.allPairs cols rows
                 |> Array.iter (fun ((cx, PixelX x0, PixelX x1), (cy, PixelY y0, PixelY y1)) ->
@@ -140,9 +117,7 @@ let actor (self:Actor<obj>) =
                 let cells = Array2D.init x y (fun x y -> {Value=Init; Clue=None; Point={X=x;Y=y}} )
                 return! sized cells
         // anything else is unhandled
-        | _ ->
-            coord <! (self, sprintf "bounded.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
         return! bounded board
     }
 
@@ -150,24 +125,18 @@ let actor (self:Actor<obj>) =
     let rec unbounded (window:Pixels) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log -> coord.Forward msg
-        | :? FoundSideMsg ->
-            coord <! (self, sprintf "unbounded.FoundSideMsg %A" msg)
-            coord.Forward msg
+        | :? FoundSideMsg -> coord.Forward msg
         // forward to coord, clip, tell recog to DetectCells and we become bounded
         | :? SidesFinalizedMsg as msg' ->
             match msg' with
             | SidesFinalized rect ->
                 let {Top=(PixelY t);Bottom=(PixelY b);Left=(PixelX l);Right=(PixelX r)} = rect
-                coord <! (self, sprintf "unbounded.SidesFinalized t:%i b:%i l:%i r:%i" t b l r )
                 coord.Forward msg
                 let board = window |> clipPixels rect
                 recog <! DetectCells board
                 return! bounded board
         // anything else is unhandled
-        | _ ->
-            coord <! (self, sprintf "unbounded.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
         return! unbounded window
     }
 
@@ -179,13 +148,10 @@ let actor (self:Actor<obj>) =
         | :? SetWindowMsg as msg' ->
             match msg' with
             | SetWindow window ->
-                coord <! (self, "initial.SetWindow")
                 recog <! DetectSides window
                 return! unbounded window
         // anything else is unhandled
-        | _ ->
-            coord <! (self, sprintf "initial.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
         return! initial ()
     }
     initial ()

@@ -9,13 +9,11 @@ open Utility
 
 let actor (self:Actor<obj>) =
     let board = spawn self "board" BoardActor.actor
-    let logger = spawn self "log'" (actorOf logHandler)
 
     // coordinator is currently working on recognizing
     let rec hasBitmap (ui:IActorRef) (bitmap:Bitmap) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log as entry -> logger.Forward entry
         | :? SidesFinalizedMsg as msg' ->
             match msg' with
             | SidesFinalized rect ->
@@ -30,12 +28,8 @@ let actor (self:Actor<obj>) =
         | :? FoundClueMsg
         | :? CluesFinalizedMsg
         | :? SetBoardStateMsg
-        | :? DrawCellsMsg ->
-            logger <! (self, sprintf "hasBitmap.[UI Message] %A" msg)
-            ui.Forward msg
-        | _ ->
-            logger <! (self, sprintf "hasBitmap.Unhandled: %A" msg)
-            self.Unhandled msg
+        | :? DrawCellsMsg -> ui.Forward msg
+        | _ -> self.Unhandled msg
         return! hasBitmap ui bitmap
     }
 
@@ -43,18 +37,14 @@ let actor (self:Actor<obj>) =
     let rec hasUi (ui:IActorRef) = actor {
         let! msg = self.Receive()
         match msg with
-        | :? Log as entry -> logger.Forward entry
         | :? OpenBitmapFileMsg as msg' ->
             match msg' with
             | OpenBitmapFile (BitmapFile file) ->
-                logger <! (self, sprintf "hasUi.OpenBitmapFile of %s" file)
                 let bitmap = new Bitmap( file |> Image.FromFile )
                 board <! SetWindow (bitmap |> toPixels)
                 ui <! ShowWindowImage (bitmap |> clone |> WindowBitmap)
                 return! hasBitmap ui bitmap
-        | _ ->
-            logger <! (self, sprintf "hasUi.Unhandled: %A" msg)
-            self.Unhandled msg
+        | _ -> self.Unhandled msg
 
         return! hasUi ui
     }
@@ -66,12 +56,9 @@ let actor (self:Actor<obj>) =
         | :? SetUiMsg as msg' ->
             match msg' with
             | SetUi ui ->
-                logger <! (self, sprintf "noUi.SetUi of %A" ui.Path)
                 self.UnstashAll ()
                 return! hasUi ui
-        | _ ->
-            logger <! (self, sprintf "noUi.Stashing: %A" msg)
-            self.Stash ()
+        | _ -> self.Stash ()
     }
 
     noUi ()
