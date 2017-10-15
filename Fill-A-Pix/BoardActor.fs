@@ -140,7 +140,6 @@ let actor (self:Actor<obj>) =
         return! unbounded window
     }
 
-    // initially, we expect only to receive a DetectBoard message
     let rec initial () = actor {
         let! msg = self.Receive()
         match msg with

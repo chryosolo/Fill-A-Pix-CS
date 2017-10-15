@@ -19,19 +19,6 @@ let drawCell (form:FrmMain) cell =
         | Some (cv, Used) -> (Nullable(int cv), UiClueState.Used)
     form.LogShowClue( cell.Point.X, cell.Point.Y, clueVal, clueState, cellValue )
 
-let processUpdateCommand (frmMain:FrmMain) cmd =
-    match cmd with
-    | UpdateCellValue (cell,newValue) ->
-        let cell' = {cell with Value=newValue}
-        drawCell frmMain cell'
-    | UpdateClueState (cell,newState) ->
-        let clue' = 
-            match cell.Clue with
-            | None -> None
-            | Some (clue,_) -> Some (clue,newState)
-        drawCell frmMain {cell with Clue=clue'}
-
-
 let actor (form:FrmMain) (self:Actor<obj>) =
     let rec loop (coord:IActorRef option) = actor {
         let! msg = self.Receive()

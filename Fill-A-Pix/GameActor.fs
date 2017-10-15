@@ -15,27 +15,20 @@ type UsableClue =
 
 
 let isOnBoard board point =
-    point.Y >= 0
-    && point.X >= 0
-    && point.Y < board.Rows
+    point.X >= 0
+    && point.Y >= 0
     && point.X < board.Cols
-
-
-let getCellNeighborPts board cell =
-    let deltas = [|-1;0;1|]
-    let isOnBoard = isOnBoard board
-    Array.allPairs deltas deltas
-    |> Array.map (fun (x,y) -> {X=cell.Point.X+x; Y=cell.Point.Y+y} )
-    |> Array.where isOnBoard
+    && point.Y < board.Rows
 
 
 let getCellNeighbors board cell =
-    getCellNeighborPts board cell
+    let deltas = [|-1;0;1|]
+    let isOnBoard = isOnBoard board
+
+    Array.allPairs deltas deltas
+    |> Array.map (fun (dx,dy) -> {X=cell.Point.X+dx; Y=cell.Point.Y+dy} )
+    |> Array.where isOnBoard
     |> Array.map (fun p -> board.Cells.[p.X,p.Y])
-
-
-let getCellFromBoard board point =
-    board.Cells.[point.X,point.Y]
 
 
 let (|IsZeroClue|_|) (_:Cell[],cell:Cell) =

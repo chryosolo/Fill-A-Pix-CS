@@ -336,8 +336,10 @@ namespace Fill_A_Pix_UI
             {
                 g.FillRectangle( fillBrush, rect );
                 g.DrawRectangle( _penClueBoundary, rect );
-                if ( number != null )
-                    g.DrawString( number.ToString(), new Font( DefaultFont.Name, _scaler.Scale * 20 ), textBrush, rect, _clueFormat );
+                if( number != null )
+                    g.DrawString( number.ToString(),
+                        new Font( DefaultFont.Name, _scaler.Scale * 20 ), textBrush, rect,
+                        _clueFormat );
             }
         }
 

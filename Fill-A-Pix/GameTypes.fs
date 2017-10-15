@@ -6,7 +6,6 @@ open System.Drawing
 type BitmapFile = | BitmapFile of string
 type WindowBitmap = | WindowBitmap of Bitmap
 type BoardBitmap = | BoardBitmap of Bitmap
-type CellBitmap = | CellBitmap of Bitmap
 type Pixels = Color[,]
 type PixelX = | PixelX of int
 type PixelY = | PixelY of int
