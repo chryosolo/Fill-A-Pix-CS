@@ -68,6 +68,8 @@
     <None Include="App.config" />
     <Content Include="packages.config" />
     <None Include="Debugging.fsx" />
+    <None Include="AkkaClass.fsx" />
+    <None Include="MailboxProcessor.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Akka">
