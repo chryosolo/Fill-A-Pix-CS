@@ -14,7 +14,8 @@ type ClueTemplate = { Clue: Clue option; Pixels: Pixels }
 
 // Load the file with the given name from an image file and convert it to a Pixel array
 let loadPixels name =
-    let filename = sprintf "C:\\git\\MySandbox\\Fill-A-Pix\\Fill-A-Pix\\Numbers\\%s.png" name
+    let filename = sprintf "%s\\..\\..\\Numbers\\%s.png"
+                     (System.Environment.CurrentDirectory) name
     new Bitmap( Image.FromFile( filename ) )
     |> toPixels
 
