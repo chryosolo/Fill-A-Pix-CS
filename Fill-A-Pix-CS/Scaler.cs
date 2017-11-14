@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Fill_A_Pix_UI
+namespace Fill_A_Pix_CS
 {
     public class Scaler
     {

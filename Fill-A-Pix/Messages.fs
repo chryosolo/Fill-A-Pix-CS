@@ -2,7 +2,7 @@
 
 open GameTypes
 open Akka.Actor
-open Fill_A_Pix_UI
+open Fill_A_Pix_CS
 
 // Select a File
 type OpenBitmapFileMsg = | OpenBitmapFile of BitmapFile

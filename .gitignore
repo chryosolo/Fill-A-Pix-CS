@@ -1,9 +1,9 @@
 packages/
 /.vscode
 .vs/
-Fill-A-Pix Types/bin/
-Fill-A-Pix Types/obj/
 Fill-A-Pix UI/bin/
 Fill-A-Pix UI/obj/
 Fill-A-Pix/bin/
 Fill-A-Pix/obj/
+/Fill-A-Pix-CS/bin
+/Fill-A-Pix-CS/obj

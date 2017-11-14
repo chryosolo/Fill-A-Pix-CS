@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using Akka.Actor;
 
-namespace Fill_A_Pix_UI
+namespace Fill_A_Pix_CS
 {
     public enum UiClueState
     {

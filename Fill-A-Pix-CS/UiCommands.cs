@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace Fill_A_Pix_UI
+namespace Fill_A_Pix_CS
 {
     public class UiCommand
     {

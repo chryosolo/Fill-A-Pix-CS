@@ -3,7 +3,7 @@
 open System
 open System.Windows.Forms
 open Akka.FSharp
-open Fill_A_Pix_UI
+open Fill_A_Pix_CS
 
 
 [<EntryPoint>]

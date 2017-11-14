@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fill-A-Pix", "Fill-A-Pix\Fill-A-Pix.fsproj", "{4C3E7D4E-44D7-4501-A883-F899DAC44988}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fill-A-Pix UI", "Fill-A-Pix UI\Fill-A-Pix UI.csproj", "{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fill-A-Pix-CS", "Fill-A-Pix-CS\Fill-A-Pix-CS.csproj", "{C81A14F4-30BB-4A47-88A0-1C593D5D3A04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

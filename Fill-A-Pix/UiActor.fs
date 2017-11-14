@@ -5,7 +5,7 @@ open Akka.FSharp
 open Akka.Actor
 open GameTypes
 open Messages
-open Fill_A_Pix_UI
+open Fill_A_Pix_CS
 
 let drawCell (form:FrmMain) cell =
     let cellValue = match cell.Value with

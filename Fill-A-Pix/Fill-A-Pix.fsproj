@@ -110,8 +110,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Fill-A-Pix UI\Fill-A-Pix UI.csproj">
-      <Name>Fill-A-Pix UI</Name>
+    <ProjectReference Include="..\Fill-A-Pix-CS\Fill-A-Pix-CS.csproj">
+      <Name>Fill-A-Pix-CS</Name>
       <Project>{c81a14f4-30bb-4a47-88a0-1c593d5d3a04}</Project>
       <Private>True</Private>
     </ProjectReference>

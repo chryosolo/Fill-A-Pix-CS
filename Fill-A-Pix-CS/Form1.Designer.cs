@@ -1,4 +1,4 @@
-﻿namespace Fill_A_Pix_UI
+﻿namespace Fill_A_Pix_CS
 {
     partial class FrmMain
     {
